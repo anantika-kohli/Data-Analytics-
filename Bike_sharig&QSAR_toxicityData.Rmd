@@ -1,21 +1,19 @@
 ---
-title: "3333 Assignment 1"
 author: "Anantika Kohli"
 date: "2026-01-21"
 output: html_document
 ---
-Question 1 
+ 
 ```{r}
 day <- read.csv("day.csv")
 ```
 
-(a)
 ```{r}
 days_2012=subset(day, yr==1)
 weekday_var2= factor(days_2012$weekday, levels=0:6, labels=c("Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"))
 tapply(days_2012$registered,weekday_var2,mean)
 ```
-(b)
+
 ```{r}
 month_var2=factor(days_2012$mnth, levels=1:12, labels = c("jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"))
 library(lattice)
@@ -23,7 +21,6 @@ densityplot(~registered|month_var2, data=days_2012,layout=c(4,3), plot.points=FA
 ```
 
 
-(c)
 
 ```{r}
 temp=cut(day$temp, breaks = 10)
@@ -32,8 +29,6 @@ registered=tapply(day$registered, INDEX=list(temp,hum), FUN = mean, na.rum=TRUE)
 levelplot(registered, xlab="Humidity", ylab="Temperature", main="Mean registered users by temperature and humidity", scales=list(x=list(rot=90)))
 ```
 
-
-(d)
 
 ```{r}
 total_registered_2012=function(days_2012){
@@ -47,7 +42,8 @@ return(total)
 }
 total_registered_2012(days_2012)
 ```
-(e)
+
+
 ```{r}
 regusers_season=function(day){
   tapply(day$registered,INDEX=list(factor(day$yr, levels=c(0,1), labels = c("2011","2012")), factor(day$season, levels = 1:4, labels = c("spring", "summer","autum", "winter"))), FUN=mean)
@@ -55,17 +51,20 @@ regusers_season=function(day){
 regusers_season(day)
 ```
 
-Question 2
 ```{r}
 model1=lm(casual~temp+hum, data=day)
 summary(model1)
 ```
-(b)
+
+
+
 ```{r}
 model2=lm(casual~temp + hum + windspeed + season + weekday + workingday, data=day)
 summary(model2)
 ```
-(c)
+
+
+
 ```{r}
 crossvalidationerror1=0
 crossvalidationerror2=0
@@ -96,12 +95,12 @@ crossval_mse2
 Model 2 with more predictions has a lower mean square error, therefore model 2 has better predictive power.
 
 
-Question 5
+
 ```{r}
 library(lars)
 ```
 
-(a)
+
 ```{r}
 qsar=read.csv("qsar_fish_toxicity.csv", header=FALSE, sep=";")
 x=as.matrix(qsar[,1:6])
@@ -118,7 +117,7 @@ Model 5 is {X6, X2, X3, X4, X5}
 Model 6 is {X6, X2, X3, X4, X5, X1}
 
 
-(b)
+
 ```{r}
 fish_row=nrow(x)
 x_fake=x
@@ -129,7 +128,7 @@ for (i in 1:100){
 }
 ```
 
-(c)
+
 ```{r}
 library(lars)
 lars_fake=lars(x_fake,y,type="lasso", normalize=TRUE, intercept= TRUE)
