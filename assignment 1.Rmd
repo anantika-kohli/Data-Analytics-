@@ -1,0 +1,168 @@
+---
+title: "3333 Assignment 1"
+author: "Anantika Kohli"
+date: "2026-01-21"
+output: html_document
+---
+Question 1 
+```{r}
+day <- read.csv("day.csv")
+```
+
+(a)
+```{r}
+days_2012=subset(day, yr==1)
+weekday_var2= factor(days_2012$weekday, levels=0:6, labels=c("Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"))
+tapply(days_2012$registered,weekday_var2,mean)
+```
+(b)
+```{r}
+month_var2=factor(days_2012$mnth, levels=1:12, labels = c("jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"))
+library(lattice)
+densityplot(~registered|month_var2, data=days_2012,layout=c(4,3), plot.points=FALSE, col="black", xlab="no.of registered users", main="Density plot of registered users each month in 2012")
+```
+
+
+(c)
+
+```{r}
+temp=cut(day$temp, breaks = 10)
+hum=cut(day$hum, breaks = 10)
+registered=tapply(day$registered, INDEX=list(temp,hum), FUN = mean, na.rum=TRUE)
+levelplot(registered, xlab="Humidity", ylab="Temperature", main="Mean registered users by temperature and humidity", scales=list(x=list(rot=90)))
+```
+
+
+(d)
+
+```{r}
+total_registered_2012=function(days_2012){
+  
+total=0
+
+for (i in 1:nrow(days_2012)) {
+  total=total+days_2012$registered[i]
+}
+return(total)
+}
+total_registered_2012(days_2012)
+```
+(e)
+```{r}
+regusers_season=function(day){
+  tapply(day$registered,INDEX=list(factor(day$yr, levels=c(0,1), labels = c("2011","2012")), factor(day$season, levels = 1:4, labels = c("spring", "summer","autum", "winter"))), FUN=mean)
+}
+regusers_season(day)
+```
+
+Question 2
+```{r}
+model1=lm(casual~temp+hum, data=day)
+summary(model1)
+```
+(b)
+```{r}
+model2=lm(casual~temp + hum + windspeed + season + weekday + workingday, data=day)
+summary(model2)
+```
+(c)
+```{r}
+crossvalidationerror1=0
+crossvalidationerror2=0
+n=nrow(day)
+ntrain=floor(0.8*n)
+ntest= n-ntrain
+
+for (i in 1:1000){
+  
+  training_id= sample(1:n, ntrain)
+  testid= (1:n)[-training_id]
+  
+  model1= lm(casual~ temp+ hum, data=day[training_id,])
+  x1= day[testid, ]$casual - predict(model1, day[testid, ])
+  crossvalidationerror1 = crossvalidationerror1 + sum(x1^2)
+  
+  model2= lm(casual~ temp + hum + windspeed + season + weekday + workingday, data= day[training_id, ])
+  x2=day[testid, ]$casual - predict(model2, day[testid, ])
+  crossvalidationerror2=crossvalidationerror2+sum(x2^2)
+}
+
+crossval_mse1= crossvalidationerror1/(ntest*1000)
+crossval_mse2= crossvalidationerror2/(ntest*1000)
+
+crossval_mse1
+crossval_mse2
+```
+Model 2 with more predictions has a lower mean square error, therefore model 2 has better predictive power.
+
+
+Question 5
+```{r}
+library(lars)
+```
+
+(a)
+```{r}
+qsar=read.csv("qsar_fish_toxicity.csv", header=FALSE, sep=";")
+x=as.matrix(qsar[,1:6])
+y=qsar[ ,7]
+lars_fit=lars(x,y,type="lasso")
+lars_fit$entry
+```
+
+Model 1 is {X6}
+Model 2 is {X6, X2}
+Model 3 is {X6, X2, X3}
+Model 4 is {X6, X2, X3, X4}
+Model 5 is {X6, X2, X3, X4, X5}
+Model 6 is {X6, X2, X3, X4, X5, X1}
+
+
+(b)
+```{r}
+fish_row=nrow(x)
+x_fake=x
+
+for (i in 1:100){
+  fakepred=rnorm(fish_row,0,1)
+  x_fake=cbind(x_fake, fakepred)
+}
+```
+
+(c)
+```{r}
+library(lars)
+lars_fake=lars(x_fake,y,type="lasso", normalize=TRUE, intercept= TRUE)
+
+cv_output=cv.lars(x_fake,y,K=10, type="lasso",normalize=TRUE, intercept=TRUE)
+
+plot(cv_output$index, cv_output$cv, xlab = "fraction s", ylab="cross validated error", type="l")
+
+
+best_index=which.min(cv_output$cv)
+points(cv_output$index[best_index], cv_output$cv[best_index], pch=19)
+best_s=cv_output$index[best_index]
+best_s
+```
+
+Using 10-fold cross-validation, the optimal fraction along the lasso path was 
+s =0.465
+
+
+```{r}
+lars_fake=lars(x_fake, y , type="lasso", normalize=TRUE, intercept=TRUE)
+
+coeff_best=predict(lars_fake,s=best_s, type="coefficients", mode="fraction")$coefficients
+
+selected=which(coeff_best !=0)
+selected
+```
+At 0.465 value of s, the penalized regression selected all six original QSAR predictors, indicating strong signal in the true variables. However, the model also selected several of the 100 artificially generated predictors. This demonstrates that cross-validation, which aims to minimize prediction error, does not necessarily yield perfect variable selection and may include noise variables when many irrelevant predictors are present.
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
