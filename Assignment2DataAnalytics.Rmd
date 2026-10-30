@@ -1,0 +1,248 @@
+---
+title: "Assignment 2"
+author: "Anantika Kohli"
+date: "2026-02-21"
+output: html_document
+---
+Q1
+
+```{r}
+f<- function(th){
+  p<-(3*th^2-1)/(1+th^3)
+  return(p)
+}
+
+#First derivative
+fp<- function(th){
+  p<-(6*th-3*th^4+3*th^2)/(1+th^3)^2
+  return(p)
+}
+
+#Second derivative
+fpp <- function(th){
+  p<-6*(th^6-2*th^2-7*th^3+th+1)/(1+th^3)^3
+  return(p)
+}
+
+#Newton Method 
+diff<- 4
+iter<- 0
+th<-1.5
+while((diff>0.001)&&(iter<30)){
+  oldth<-th
+  th<-th-fp(th)/fpp(th)
+  diff<- abs(th-oldth)
+  iter<-iter+1
+  print(c(iter,diff))
+}
+th
+
+
+```
+The maximizer is theta = 1.52163
+
+Q2 (a)
+```{r}
+sales <- c(61,73,85,106,120,129,142,144,161)
+ad <- c(19,26,30,34,43,48,52,57,68)
+X <- cbind(1,ad)
+Y <- as.matrix(sales)
+I <-diag(2)
+
+#Ridge regression with lambda
+#1. lambda =0.1
+
+lambda <- 0.1
+theta_ridge1 <- solve(t(X)%*%X + lambda*I)%*%t(X)%*%Y
+theta_ridge1
+
+#2. lambda = 1
+
+lambda <- 1
+theta_ridge2 <- solve(t(X)%*%X + lambda*I)%*%t(X)%*%Y
+theta_ridge2
+
+
+#3. lambda = 10
+
+lambda <- 10
+theta_ridge3 <- solve(t(X)%*%X + lambda*I)%*%t(X)%*%Y
+theta_ridge3
+
+
+#4. lambda = 100
+
+lambda <- 100
+theta_ridge4 <- solve(t(X)%*%X + lambda*I)%*%t(X)%*%Y
+theta_ridge4
+
+
+
+
+
+
+```
+
+(b) As lambda increases in ridge regression the intercept decreases susbtantially and the slope increases slightly. The ridge regression shrinks coefficients but never becomes equal to 0. Ridge uses an L2 penalty whose constraint is a circle. Since a circle does not have any sharp corners the solution rarely lands exactly on zero. 
+LASSO uses L1 penalty whose constraint is a diamond (tighter constraint), it has sharp corners so the solution often lands exactly at zero. LASSO produces sparse solutions.
+Therefore, ridge keeps all predictors in the model while LASSO eliminates some predictors producing a sparse model. 
+
+
+
+Q3 (a)
+```{r}
+german <- read.table("german.data", header = FALSE)
+
+german$default <- ifelse(german$V21 == 2, 1, 0)
+
+factor_vars <- c(1,3,4,6,7,9,10,12,14,15,17,19,20)
+german[factor_vars] <- lapply(german[factor_vars], factor)
+
+set.seed(060720)
+train_index <- sample(1:1000, 900)
+
+
+train <- german[train_index, ]
+test  <- german[-train_index, ]
+
+model1 <- glm(default ~ V2 + V5 + V13 + V1, data = train, family = binomial )
+
+summary(model1)
+```
+To interpret the regression coefficient, we pick V2 with coefficient = 0.03349
+```{r}
+exp(0.03349)
+```
+```{r}
+prob1 <- predict(model1, newdata = test, type = "response")
+head(prob1)
+```
+Cutoff chosen = 0.5
+```{r}
+cutoff <- 0.5
+pred1 <- ifelse(prob1 >= cutoff, 1, 0)
+```
+
+Create a confusion matrix:-
+```{r}
+cm1 <- table(actual= test$default, predicted= pred1)
+cm1
+```
+
+Setting labels for the entries in the confusion matrix:-
+```{r}
+FN1 <- cm1["1","0"] #FN=False Negative
+FP1 <- cm1["0","1"] #FP=False Positive
+TN1 <- cm1["1","1"] #TN=True Negative
+TP1 <- cm1["0","0"] #TP=True Positive
+
+FN1
+FP1
+
+err1 <- FN1 + FP1
+err1
+```
+11 default ones were predicted to be non-default and 8 non-default ones were predicted to be default ones. 
+
+
+
+Adding more predictors and interaction term between V2(Loan duration) and V5 (Credit amount) for model 2 :-
+```{r}
+model2 <- glm(default ~ V2 + V5 + V13 + V8 + V1 + V3 + V4 + V7 +  V2:V5, data = train, family = binomial)
+summary(model2)
+```
+
+Now we predict and classify the errors for model 2 with cut off =0.5
+```{r}
+prob2 <- predict(model2, newdata = test, type="response")
+pred2 <- ifelse(prob2 >= cutoff, 1, 0)
+
+cm2 <- table(actual=test$default, predicted=pred2)
+cm2
+
+FN2 <- cm2["1","0"] #FN=False Negative
+FP2 <- cm2["0","1"] #FP=False Positive
+TN2 <- cm2["1","1"] #TN=True Negative
+TP2 <- cm2["0","0"] #TP=True Positive
+
+FN2
+FP2
+
+err2 <- FN2 + FP2
+err2
+
+```
+13<19
+Error in model 2 < error from model 1
+
+(b) Computing Sensitivity and specificity across different cutoffs:-
+
+```{r}
+# At cutoff = 0.2
+cutoff <- 0.2
+pred_02 <- ifelse(prob2 >= cutoff, 1, 0)
+
+cm_02 <- table(test$default, pred_02)
+cm_02
+
+TN_02 <- cm_02["0","0"]
+FP_02 <- cm_02["0","1"]
+FN_02 <- cm_02["1","0"]
+TP_02 <- cm_02["1","1"]
+
+sens_02 <- TP_02/(TP_02+FN_02) #sensitivity
+spec_02 <- TN_02/(TN_02+FP_02) #specificity
+
+sens_02
+spec_02
+
+```
+At 0.2 cutoff (low) - most applicants are rejected, therefore, specificity decreases.
+
+```{r}
+# At cutoff = 0.45
+cutoff <- 0.45
+pred_45 <- ifelse(prob2 >= cutoff, 1, 0)
+
+cm_45 <- table(test$default, pred_45)
+cm_45
+
+TN_45 <- cm_45["0","0"]
+FP_45 <- cm_45["0","1"]
+FN_45 <- cm_45["1","0"]
+TP_45 <- cm_45["1","1"]
+
+sens_45 <- TP_45/(TP_45+FN_45) #sensitivity
+spec_45 <- TN_45/(TN_45+FP_45) #specificity
+
+sens_45
+spec_45
+```
+At cutoff = 0.45 we see more applicants getting accepted and specificity increases.
+
+```{r}
+# At cutoff = 0.7
+cutoff <- 0.7
+pred_7 <- ifelse(prob2 >= cutoff, 1, 0)
+
+cm_7 <- table(test$default, pred_7)
+cm_7
+
+TN_7 <- cm_7["0","0"]
+FP_7 <- cm_7["0","1"]
+FN_7 <- cm_7["1","0"]
+TP_7 <- cm_7["1","1"]
+
+sens_7 <- TP_7/(TP_7+FN_7) #sensitivity
+spec_7 <- TN_7/(TN_7+FP_7) #specificity
+
+sens_7
+spec_7
+```
+At cut off =0.7 almost everyone gets accepted the specificity increases to 0.98 and sensitivity drops to 0.4
+Therefore, as the cutoff probability increases, sensitivity decreases while specificity increases. Higher cutoffs reduce false positives but miss more defaulters/risky customers.
+
+
+
+
+

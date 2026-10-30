@@ -1,0 +1,50 @@
+---
+title: "Q4_A3"
+author: "Anantika Kohli"
+date: "2026-03-15"
+output: html_document
+---
+
+```{r}
+library(MASS)
+
+
+data <- read.csv("student-mat.csv", sep=";")
+
+
+data$schoolsup <- as.factor(data$schoolsup)
+
+
+n <- nrow(data)
+nt <- 300
+neval <- n - nt
+rep <- 5
+
+errlin <- numeric(rep)
+errqua <- numeric(rep)
+
+set.seed(0607)
+
+for(k in 1:rep){
+
+  train <- sample(1:n, nt)
+
+  ## linear discriminant analysis
+  m1 <- lda(schoolsup ~ G1 + G2 + G3, data = data[train, ])
+  tablin <- table(data$schoolsup[-train], predict(m1, data[-train, ])$class)
+  errlin[k] <- (neval - sum(diag(tablin))) / neval
+
+  ## quadratic discriminant analysis
+  m2 <- qda(schoolsup ~ G1 + G2 + G3, data = data[train, ])
+  tabqua <- table(data$schoolsup[-train], predict(m2, data[-train, ])$class)
+  errqua[k] <- (neval - sum(diag(tabqua))) / neval
+}
+
+merrlin <- mean(errlin)
+merrqua <- mean(errqua)
+
+
+merrlin
+merrqua
+```
+The linear discriminant analysis model has a smaller error rate than the quadratic discriminant analysis model. Therefore, the linear discriminant analysis performs better for this dataset.

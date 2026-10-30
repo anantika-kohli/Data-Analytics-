@@ -1,0 +1,117 @@
+---
+title: "OA(coding)"
+author: "Anantika Kohli"
+date: "2026-03-17"
+output: html_document
+---
+
+Q1
+```{r}
+rm(list = ls())
+gc()
+
+library(lars)
+
+data <- read.csv("bankdatatest.csv", header=FALSE)
+
+y <- data[, 1]
+
+x <- as.matrix(data[, -1])
+
+fit_lasso <- lars(x, y, type = "lasso")
+
+cv_fit <- cv.lars(x, y, type = "lasso", K = 10)
+
+plot(cv_fit$index, cv_fit$cv, type = "l",
+     xlab = "Fraction (s)",
+     ylab = "CV Error")
+
+coef_s <- predict(fit_lasso,s = 0.2,type = "coef",mode = "fraction")$coefficients
+
+coef_s
+
+abs_coef <- abs(coef_s)
+
+top5_index <- order(abs_coef, decreasing = TRUE)[1:5]
+
+top5_index
+coef_s[top5_index]
+
+colnames(x)[top5_index]
+```
+At s=0.2, the LASSO coefficient estimates were obtained. Most coefficients were shrunk to zero, indicating that those predictors are not important. The five most important predictors are those with the largest absolute coefficients.
+
+Five most important predictors are:
+
+V27, V25, V22, V21, and V11
+
+
+
+Q2
+
+```{r}
+library(lattice)
+
+data <- read.csv("bankdatatest.csv", header=FALSE)
+
+y  <- data[,1]
+x1 <- data[,2]
+x2 <- data[,3]
+
+levelplot(y ~ x1 * x2, xlab = "Predictor 1", ylab = "Predictor 2",main = "Levelplot of response",col.regions = heat.colors(100))
+```
+The x-axis represents Predictor 1 and the y-axis represents Predictor 2, while the color intensity indicates the magnitude of the response variable. Higher response values are shown in lighter colors (yellow), while lower values are shown in darker colors (red).
+
+
+Q3
+
+```{r}
+rm(list = ls())
+gc()
+
+data <- read.csv("Cancer_Data.csv")
+
+data$diagnosis <- as.factor(data$diagnosis)
+
+
+set.seed(0607)
+
+n <- nrow(data)
+nt <- round(0.8 * n)
+neval <- n - nt
+
+train_index <- sample(1:n, nt)
+
+train <- data[train_index, ]
+test  <- data[-train_index, ]
+
+
+
+train_log <- train
+test_log  <- test
+
+train_log$diagnosis <- ifelse(train_log$diagnosis == "M", 1, 0)
+test_log$diagnosis  <- ifelse(test_log$diagnosis == "M", 1, 0)
+
+
+fit_log <- glm(diagnosis ~ ., data = train_log, family = binomial)
+
+
+phat <- predict(fit_log, newdata = test_log, type = "response")
+
+pred <- ifelse(phat > 0.6, 1, 0)
+
+
+tab <- table(Actual = test_log$diagnosis, Predicted = pred)
+tab
+
+
+err <- (neval - sum(diag(tab))) / neval
+err
+```
+60 benign cases and 48 malignant cases were classified correctly, while 6 cases were misclassified. Therefore, the misclassification error of the model is 0.0526, or about 5.26%
+
+
+
+
+
